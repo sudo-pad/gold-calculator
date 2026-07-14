@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#09090b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Gold Negotiator</title>
+<style>
+  :root{
+    --bg:#09090b; --panel:#18181b; --panel2:#0c0c0f; --line:#27272a; --line2:#3f3f46;
+    --txt:#f4f4f5; --dim:#a1a1aa; --faint:#71717a; --gold:#f5b942; --gold-d:#b8860b;
+    --green:#34d399; --red:#fb7185; --blue:#60a5fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px 14px 40px;max-width:460px;margin:0 auto;font-size:15px}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  h1 span{color:var(--gold)}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .seg button{background:none;border:none;color:var(--faint);font-weight:700;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer}
+  .seg button.on{background:var(--gold);color:#0a0a0a}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px}
+  .card.gold{border-color:rgba(245,185,66,.35);background:linear-gradient(150deg,#1c1a12,#131316)}
+  .card.rose{border-color:rgba(251,113,133,.3)}
+  .card.green{border-color:rgba(52,211,153,.3)}
+  .ttl{font-size:13px;font-weight:800;margin-bottom:10px}
+  .ttl.rose{color:var(--red)} .ttl.green{color:var(--green)}
+  .lbl{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:10px 0 5px}
+  input{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--txt);font-size:16px;padding:11px 12px;outline:none}
+  input:focus{border-color:var(--gold)}
+  textarea{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--txt);font-size:14px;padding:11px 12px;outline:none;min-height:110px;resize:vertical;font-family:inherit;line-height:1.5}
+  textarea:focus{border-color:var(--gold)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chips{display:flex;gap:5px;margin-top:6px}
+  .chips button{background:none;border:1px solid var(--line);color:var(--faint);font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer}
+  .chips button.on{border-color:var(--gold);color:var(--gold)}
+  .btn{border:none;border-radius:12px;font-weight:800;font-size:14px;padding:10px 14px;cursor:pointer;transition:transform .05s}
+  .btn:active{transform:scale(.96)}
+  .btn.gold{background:var(--gold);color:#0a0a0a}
+  .btn.ghost{background:none;border:1px solid var(--line2);color:var(--dim)}
+  .btn.wide{width:100%;margin-top:10px}
+  .rate-big{font-size:26px;font-weight:800;color:var(--gold)}
+  .rate-big small{font-size:13px;color:var(--faint);font-weight:600}
+  .rate-sub{font-size:14px;color:var(--dim)}
+  .status{font-size:11px;color:var(--faint);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .err{color:var(--red);font-size:12px;margin-top:6px}
+  /* rate board */
+  .board{display:grid;grid-template-columns:44px 1fr 1fr 1fr;gap:4px;text-align:right;margin-top:8px}
+  .board .hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:4px 2px}
+  .board .kt{text-align:left;font-weight:800;color:var(--gold);font-size:13px;display:flex;align-items:center}
+  .board button{background:var(--panel2);border:none;border-radius:9px;color:var(--txt);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;padding:8px 4px;cursor:pointer}
+  .board button.copied{background:rgba(52,211,153,.2);color:var(--green)}
+  /* tabs */
+  .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:4px;margin-top:14px}
+  .tabs button{background:none;border:none;border-radius:12px;color:var(--faint);font-weight:800;font-size:13.5px;padding:10px 4px;cursor:pointer}
+  .tabs button.on{background:var(--gold);color:#0a0a0a}
+  /* results */
+  .rrow{display:flex;justify-content:space-between;padding:4px 0;font-size:13.5px}
+  .rrow .l{color:var(--dim)} .rrow .v{font-weight:600}
+  .rrow.strong .v{font-weight:800;color:var(--txt)}
+  .rrow.dim .l,.rrow.dim .v{color:var(--faint);font-weight:500}
+  .sep{border-top:1px solid var(--line);margin:7px 0}
+  .verdict{border-radius:16px;padding:15px;margin-top:12px;color:#fff}
+  .verdict.good{background:linear-gradient(140deg,#059669,#047857)}
+  .verdict.ok{background:linear-gradient(140deg,#d97706,#b45309)}
+  .verdict.bad{background:linear-gradient(140deg,#e11d48,#be123c)}
+  .verdict .vt{font-weight:800;font-size:15px}
+  .verdict p{font-size:13px;margin-top:5px;color:rgba(255,255,255,.87);line-height:1.45}
+  .inline-res{background:var(--panel2);border-radius:12px;padding:6px 10px;margin-top:10px}
+  .need{border:1px dashed var(--line2);border-radius:16px;padding:18px;text-align:center;color:var(--faint);font-size:13px;margin-top:12px}
+  .foot{text-align:center;font-size:11px;color:#52525b;margin-top:20px;line-height:1.6}
+  .hide{display:none!important}
+  .mt{margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="row">
+  <h1><span>◆</span> Gold Negotiator</h1>
+  <div class="seg" id="curSeg"></div>
+</header>
+
+<!-- RATE BAR -->
+<div class="card gold">
+  <div class="row">
+    <div>
+      <div class="lbl" style="margin-top:0">24K market rate</div>
+      <div id="rateDisplay"><div class="rate-sub">Fetch live rate or enter manually</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <button class="btn gold" id="fetchBtn">⚡ Fetch live</button>
+      <button class="btn ghost" id="manualBtn" style="font-size:11px;padding:4px 10px">enter manually</button>
+    </div>
+  </div>
+  <div id="rateStatus"></div>
+  <div id="rateErr"></div>
+  <div id="manualBox" class="hide">
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input id="manualVal" inputmode="decimal" placeholder="24K rate">
+      <div class="seg" id="manualPer" style="flex-shrink:0"></div>
+    </div>
+    <button class="btn gold wide" id="manualSet">Set rate</button>
+  </div>
+</div>
+
+<!-- RATE BOARD -->
+<div class="card hide" id="boardCard">
+  <div class="row">
+    <span class="lbl" style="margin:0">Rate board · tap to copy</span>
+    <button class="btn ghost" id="copyAll" style="font-size:11px;padding:3px 10px">Copy all</button>
+  </div>
+  <div class="board" id="board"></div>
+</div>
+
+<!-- MODE TABS -->
+<div class="tabs" id="tabs"></div>
+
+<div id="modeBuy"></div>
+<div id="modeSell"></div>
+<div id="modeExchange"></div>
+
+<!-- NOTES -->
+<div class="card">
+  <div class="row">
+    <span class="lbl" style="margin:0">Quick notes</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn ghost" id="notesCopy" style="font-size:11px;padding:3px 10px">Copy</button>
+      <button class="btn ghost" id="notesClear" style="font-size:11px;padding:3px 10px">Clear</button>
+    </div>
+  </div>
+  <textarea id="notes" class="mt" placeholder="Shop quotes, weights, offers… saves automatically on this device"></textarea>
+  <div class="status" id="notesStatus"></div>
+</div>
+
+<p class="foot">1 tola = 11.6638 g · Live = international spot converted to local currency (bazaar rates may differ slightly — use manual entry to match)<br>Verdicts are rough guides, not appraisals</p>
+
+<script>
+// ============ core ============
+const TOLA=11.6638, OZ=31.1034768;
+const SYM={PKR:"Rs",USD:"$",CAD:"C$"};
+const $=id=>document.getElementById(id);
+const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x};
+const toG=(w,u)=>u==="tola"?n(w)*TOLA:n(w);
+const fmt=(x,c)=>`${SYM[c]} ${Math.round(x).toLocaleString()}`;
+const fmt2=(x,c)=>`${SYM[c]} ${x.toLocaleString(undefined,{maximumFractionDigits:2})}`;
+const pc=x=>x.toFixed(1)+"%";
+
+// safe storage (works self-hosted; degrades silently elsewhere)
+const store={
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+
+let S={
+  cur: store.get("cur")||"PKR",
+  mode:"buy",
+  cache: store.get("rateCache")||null, // {rates:{PKR,USD,CAD} per g 24K, at, src, manual}
+  manualUnit:"tola",
+  buy:{w:"",u:"gram",k:"22",p:""},
+  sell:{w:"",u:"gram",k:"22",p:""},
+  exOld:{w:"",u:"gram",k:"22",p:""},
+  exNew:{w:"",u:"gram",k:"22",p:""}
+};
+const rate=()=>S.cache?.rates?.[S.cur]||0;
+
+// ============ clipboard ============
+function copyText(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).catch(()=>fb(t));}
+  else fb(t);
+  function fb(t){const a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(a);}
+}
+
+// ============ live fetch (public APIs, no keys) ============
+async function fetchLive(){
+  const btn=$("fetchBtn");btn.textContent="Fetching…";btn.disabled=true;$("rateErr").textContent="";
+  try{
+    const [gRes,fxRes]=await Promise.all([
+      fetch("https://api.gold-api.com/price/XAU"),
+      fetch("https://open.er-api.com/v6/latest/USD")
+    ]);
+    const g=await gRes.json(), fx=await fxRes.json();
+    if(!g.price||!fx.rates) throw new Error("bad data");
+    const perG=g.price/OZ;
+    S.cache={rates:{USD:perG,PKR:perG*fx.rates.PKR,CAD:perG*fx.rates.CAD},at:Date.now(),src:"intl spot",manual:false};
+    store.set("rateCache",S.cache);
+    renderAll();
+  }catch(e){
+    $("rateErr").innerHTML='<div class="err">Couldn\'t fetch live rate — check connection or enter manually.</div>';
+    $("manualBox").classList.remove("hide");
+  }finally{btn.textContent="↻ Refresh";btn.disabled=false;}
+}
+
+// ============ segmented builders ============
+function buildSeg(el,opts,get,set){
+  el.innerHTML="";
+  opts.forEach(o=>{
+    const b=document.createElement("button");
+    b.textContent=o.label;
+    if(get()===o.val)b.classList.add("on");
+    b.onclick=()=>{set(o.val);buildSeg(el,opts,get,set)};
+    el.appendChild(b);
+  });
+}
+
+// ============ rate bar ============
+function renderRateBar(){
+  const r=rate();
+  if(r){
+    $("rateDisplay").innerHTML=
+      `<div class="rate-big">${fmt(r,S.cur)}<small> /g</small></div>
+       <div class="rate-sub">${fmt(r*TOLA,S.cur)} /tola</div>`;
+    const c=S.cache, age=Math.round((Date.now()-c.at)/60000);
+    const ageTxt=age<1?"just now":age<60?age+" min ago":Math.round(age/60)+" hr ago";
+    const dot=c.manual?"var(--blue)":age<60?"var(--green)":"var(--gold)";
+    $("rateStatus").innerHTML=`<div class="status"><span class="dot" style="background:${dot}"></span>${c.manual?"Manual rate":"Live · "+c.src} · saved ${ageTxt}</div>`;
+    $("fetchBtn").textContent="↻ Refresh";
+  }else{
+    $("rateDisplay").innerHTML='<div class="rate-sub">Fetch live rate or enter manually</div>';
+    $("rateStatus").innerHTML="";
+    $("fetchBtn").textContent="⚡ Fetch live";
+  }
+}
+
+// ============ rate board ============
+const KTS=[24,22,21,18];
+const UNITS=[{k:"g",l:"1 g",m:1},{k:"10g",l:"10 g",m:10},{k:"tola",l:"Tola",m:TOLA}];
+function renderBoard(){
+  const r=rate(), card=$("boardCard");
+  if(!r){card.classList.add("hide");return}
+  card.classList.remove("hide");
+  const bd=$("board");bd.innerHTML="";
+  bd.insertAdjacentHTML("beforeend",'<div class="hd"></div>'+UNITS.map(u=>`<div class="hd">${u.l}</div>`).join(""));
+  KTS.forEach(k=>{
+    bd.insertAdjacentHTML("beforeend",`<div class="kt">${k}K</div>`);
+    UNITS.forEach(u=>{
+      const v=r*(k/24)*u.m;
+      const b=document.createElement("button");
+      b.textContent=Math.round(v).toLocaleString();
+      b.onclick=()=>{
+        copyText(`${k}K / ${u.l}: ${SYM[S.cur]} ${Math.round(v).toLocaleString()}`);
+        b.textContent="✓";b.classList.add("copied");
+        setTimeout(()=>{b.textContent=Math.round(v).toLocaleString();b.classList.remove("copied")},1100);
+      };
+      bd.appendChild(b);
+    });
+  });
+}
+$("copyAll").onclick=()=>{
+  const r=rate();if(!r)return;
+  const lines=KTS.map(k=>`${k}K:  ${Math.round(r*k/24).toLocaleString()}/g  ·  ${Math.round(r*k/24*10).toLocaleString()}/10g  ·  ${Math.round(r*k/24*TOLA).toLocaleString()}/tola`);
+  copyText(`Gold rates (${S.cur})\n`+lines.join("\n"));
+  $("copyAll").textContent="Copied ✓";setTimeout(()=>$("copyAll").textContent="Copy all",1100);
+};
+
+// ============ item input block ============
+function itemBlock(key,priceLabel,pricePH){
+  const st=S[key];
+  return `
+  <div class="grid2">
+    <div>
+      <label class="lbl" style="margin-top:0">Weight</label>
+      <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('${key}','w',this.value)">
+      <div class="chips">
+        <button class="${st.u==='gram'?'on':''}" onclick="upd('${key}','u','gram')">g</button>
+        <button class="${st.u==='tola'?'on':''}" onclick="upd('${key}','u','tola')">tola</button>
+      </div>
+    </div>
+    <div>
+      <label class="lbl" style="margin-top:0">Karat</label>
+      <input inputmode="decimal" placeholder="22" value="${st.k}" oninput="upd('${key}','k',this.value)">
+      <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('${key}','k','${k}')">${k}K</button>`).join("")}</div>
+    </div>
+  </div>
+  <label class="lbl">${priceLabel}</label>
+  <input inputmode="decimal" placeholder="${pricePH}" value="${st.p}" oninput="upd('${key}','p',this.value)">`;
+}
+window.upd=(key,f,v)=>{
+  S[key][f]=v;
+  if(f==="u"||f==="k"){renderMode()} else {renderResultsOnly()}
+};
+
+function verdict(level,title,lines){
+  const ic={good:"✓",ok:"⚠",bad:"✗"}[level];
+  return `<div class="verdict ${level}"><div class="vt">${ic} ${title}</div>${lines.map(l=>`<p>${l}</p>`).join("")}</div>`;
+}
+const needRate='<div class="need">Set the market rate above first ↑</div>';
+const row=(l,v,cls="")=>`<div class="rrow ${cls}"><span class="l">${l}</span><span class="v">${v}</span></div>`;
+
+// ============ calculations & render per mode ============
+function calcBuy(){
+  const st=S.buy,g=toG(st.w,st.u),pg=g*(n(st.k)/24),gv=pg*rate(),ask=n(st.p);
+  return {g,pg,gv,ask,mk:ask-gv,mkPct:gv>0?(ask-gv)/gv*100:0,ready:rate()>0&&g>0&&ask>0};
+}
+function buyResults(){
+  const c=calcBuy();
+  if(!rate())return needRate;
+  if(!c.ready)return "";
+  const lvl=c.mk<0?"bad":c.mkPct<=8?"good":c.mkPct<=16?"ok":"bad";
+  let html=`<div class="card">
+    ${row("Pure gold content",c.pg.toFixed(3)+" g")}
+    ${row("Gold value at market",fmt(c.gv,S.cur),"strong")}
+    ${row("Asking price",fmt(c.ask,S.cur))}
+    <div class="sep"></div>
+    ${row("Implied making / premium",`${fmt(c.mk,S.cur)} (${pc(c.mkPct)})`,"strong")}
+    ${row("Premium per gram",fmt2(c.g?c.mk/c.g:0,S.cur),"dim")}
+    ${row("Premium per tola",fmt(c.g?c.mk/c.g*TOLA:0,S.cur),"dim")}
+  </div>`;
+  html+=c.mk<0
+    ?verdict("bad","Below gold value — verify purity!",[`Asking is ${fmt(-c.mk,S.cur)} under melt value. Either a great deal or the karat/weight isn't as claimed. Test it.`])
+    :verdict(lvl,lvl==="good"?"Reasonable premium":lvl==="ok"?"Typical retail markup":"High premium — negotiate",[
+      `You're paying ${pc(c.mkPct)} over the gold itself — that's making charge + dealer margin.`,
+      `Every ${fmt(c.gv*.01,S.cur)} you negotiate off cuts the premium by 1%.`,
+      lvl==="bad"?`Counter near ${fmt(c.gv*1.08,S.cur)} (8% premium) and settle from there.`:`Walk-away anchor: melt value is ${fmt(c.gv,S.cur)}.`
+    ]);
+  return html;
+}
+function calcSell(){
+  const st=S.sell,g=toG(st.w,st.u),pg=g*(n(st.k)/24),mv=pg*rate(),off=n(st.p);
+  return {g,pg,mv,off,cut:mv-off,cutPct:mv>0?(mv-off)/mv*100:0,ready:rate()>0&&g>0&&off>0};
+}
+function sellResults(){
+  const c=calcSell();
+  if(!rate())return needRate;
+  if(!c.ready)return "";
+  const lvl=c.cut<0?"good":c.cutPct<=3?"good":c.cutPct<=8?"ok":"bad";
+  let html=`<div class="card">
+    ${row("Pure gold content",c.pg.toFixed(3)+" g")}
+    ${row("Market value of your gold",fmt(c.mv,S.cur),"strong")}
+    ${row("Their offer",fmt(c.off,S.cur))}
+    <div class="sep"></div>
+    ${row("Below market / their margin",`${fmt(c.cut,S.cur)} (${pc(c.cutPct)})`,"strong")}
+    ${row("Margin per tola",fmt(c.g?c.cut/c.g*TOLA:0,S.cur),"dim")}
+  </div>`;
+  html+=c.cut<0
+    ?verdict("good","Above market — take it",[`They're paying ${fmt(-c.cut,S.cur)} over melt value. Unusual — confirm terms, then accept.`])
+    :verdict(lvl,lvl==="good"?"Strong offer":lvl==="ok"?"Standard buyback cut":"Lowball — push back",[
+      `They keep ${pc(c.cutPct)} of your gold's value as margin.`,
+      `Your gold melts for ${fmt(c.mv,S.cur)} — anchor there and make them justify the gap.`,
+      lvl==="bad"?`Counter at ${fmt(c.mv*.96,S.cur)} (4% cut) — many dealers work at 2–5% on buyback.`:`A second quote costs nothing; even 1% is ${fmt(c.mv*.01,S.cur)}.`
+    ]);
+  return html;
+}
+function calcEx(){
+  const o=S.exOld,w=S.exNew;
+  const og=toG(o.w,o.u),opg=og*(n(o.k)/24),om=opg*rate(),ooff=n(o.p);
+  const ng=toG(w.w,w.u),npg=ng*(n(w.k)/24),nm=npg*rate(),np=n(w.p);
+  return {
+    om,ooff,cut:om-ooff,cutPct:om>0?(om-ooff)/om*100:0,oldReady:rate()>0&&og>0&&ooff>0,
+    nm,np,prem:np-nm,premPct:nm>0?(np-nm)/nm*100:0,newReady:rate()>0&&ng>0&&np>0
+  };
+}
+function exResults(){
+  const c=calcEx();
+  // inline sub-results
+  $("exOldRes").innerHTML=c.oldReady?`<div class="inline-res">${row("Market value",fmt(c.om,S.cur),"dim")}${row("Dealer keeps on trade-in",`${fmt(c.cut,S.cur)} (${pc(c.cutPct)})`,"strong")}</div>`:"";
+  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${row("Market value",fmt(c.nm,S.cur),"dim")}${row("Making / premium charged",`${fmt(c.prem,S.cur)} (${pc(c.premPct)})`,"strong")}</div>`:"";
+  if(!rate())return needRate;
+  if(!(c.oldReady&&c.newReady))return "";
+  const cash=c.np-c.ooff, fair=c.nm-c.om, spread=c.prem+c.cut;
+  const totPct=(c.nm+c.om)>0?spread/((c.nm+c.om)/2)*100:0;
+  const lvl=totPct<=10?"good":totPct<=20?"ok":"bad";
+  return `<div class="card">
+    <div class="ttl">Deal summary</div>
+    ${row("Cash you pay on top",fmt(cash,S.cur),"strong")}
+    ${row("Fair difference (pure market)",fmt(fair,S.cur))}
+    <div class="sep"></div>
+    ${row("Dealer take: trade-in cut",fmt(c.cut,S.cur),"dim")}
+    ${row("Dealer take: making/premium",fmt(c.prem,S.cur),"dim")}
+    ${row("Total dealer spread",fmt(spread,S.cur),"strong")}
+  </div>`+verdict(lvl,
+    lvl==="good"?"Tight spread — decent exchange":lvl==="ok"?"Normal exchange economics":"Wide spread — they're double-dipping",[
+    `Dealer makes ${fmt(spread,S.cur)} total: ${fmt(c.cut,S.cur)} shaved off your old gold + ${fmt(c.prem,S.cur)} on the new piece.`,
+    `At pure market rates you'd pay ${fmt(fair,S.cur)} difference — you're paying ${fmt(cash,S.cur)}.`,
+    lvl==="bad"?"Negotiate BOTH sides: demand full melt value on your old gold, then attack the making charge separately.":"Tip: lock in the trade-in at full melt value before discussing the new piece."
+  ]);
+}
+
+// ============ mode rendering ============
+function renderMode(){
+  ["Buy","Sell","Exchange"].forEach(m=>$("mode"+m).classList.toggle("hide",S.mode!==m.toLowerCase()));
+  if(S.mode==="buy"){
+    $("modeBuy").innerHTML=`<div class="card"><div class="ttl">The piece they're offering</div>${itemBlock("buy","Asking price","what they want for it")}</div><div id="buyRes"></div>`;
+  } else if(S.mode==="sell"){
+    $("modeSell").innerHTML=`<div class="card"><div class="ttl">Your piece</div>${itemBlock("sell","Shopkeeper's offer","what they'll pay you")}</div><div id="sellRes"></div>`;
+  } else {
+    $("modeExchange").innerHTML=
+      `<div class="card rose"><div class="ttl rose">Your old piece (trading in)</div>${itemBlock("exOld","Their offer for it","credit they're giving you")}<div id="exOldRes"></div></div>
+       <div class="card green"><div class="ttl green">New piece (taking out)</div>${itemBlock("exNew","Their price for it","what they're charging")}<div id="exNewRes"></div></div>
+       <div id="exRes"></div>`;
+  }
+  renderResultsOnly();
+}
+function renderResultsOnly(){
+  if(S.mode==="buy"&&$("buyRes"))$("buyRes").innerHTML=buyResults();
+  if(S.mode==="sell"&&$("sellRes"))$("sellRes").innerHTML=sellResults();
+  if(S.mode==="exchange"&&$("exRes"))$("exRes").innerHTML=exResults();
+}
+
+// ============ wiring ============
+function renderAll(){renderRateBar();renderBoard();renderMode();}
+
+buildSeg($("curSeg"),["PKR","USD","CAD"].map(c=>({label:c,val:c})),()=>S.cur,v=>{S.cur=v;store.set("cur",v);renderAll()});
+buildSeg($("manualPer"),[{label:"/tola",val:"tola"},{label:"/g",val:"gram"}],()=>S.manualUnit,v=>S.manualUnit=v);
+
+const tabDefs=[["buy","Buying"],["sell","Selling"],["exchange","Exchange"]];
+function renderTabs(){
+  const t=$("tabs");t.innerHTML="";
+  tabDefs.forEach(([id,label])=>{
+    const b=document.createElement("button");
+    b.textContent=label;
+    if(S.mode===id)b.classList.add("on");
+    b.onclick=()=>{S.mode=id;renderTabs();renderMode()};
+    t.appendChild(b);
+  });
+}
+
+$("fetchBtn").onclick=fetchLive;
+$("manualBtn").onclick=()=>$("manualBox").classList.toggle("hide");
+$("manualSet").onclick=()=>{
+  const v=n($("manualVal").value);if(!v)return;
+  const perG=S.manualUnit==="tola"?v/TOLA:v;
+  S.cache={rates:{...(S.cache?.rates||{}),[S.cur]:perG},at:Date.now(),src:"manual",manual:true};
+  store.set("rateCache",S.cache);
+  $("manualBox").classList.add("hide");$("manualVal").value="";
+  renderAll();
+};
+
+// ============ notes ============
+const notesEl=$("notes");
+notesEl.value=(store.get("notes")||"");
+let notesT;
+notesEl.addEventListener("input",()=>{
+  clearTimeout(notesT);
+  notesT=setTimeout(()=>{store.set("notes",notesEl.value);flashNotes("Saved")},400);
+});
+function flashNotes(t){$("notesStatus").textContent=t;setTimeout(()=>{$("notesStatus").textContent=""},1200)}
+$("notesCopy").onclick=()=>{if(!notesEl.value)return;copyText(notesEl.value);flashNotes("Copied ✓")};
+$("notesClear").onclick=()=>{if(notesEl.value&&!confirm("Clear all notes?"))return;notesEl.value="";store.set("notes","");flashNotes("Cleared")};
+
+renderTabs();
+renderAll();
+</script>
+</body>
+</html>

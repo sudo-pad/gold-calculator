@@ -16,147 +16,245 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <title>Gold Negotiator — Live Rates & Making-Charge Calculator</title>
 <style>
-  /* dark (default) */
-  :root, [data-theme="dark"]{
-    --bg:#09090b; --panel:#18181b; --panel2:#0c0c0f; --line:#27272a; --line2:#3f3f46;
-    --txt:#f4f4f5; --dim:#a1a1aa; --faint:#71717a; --gold:#f5b942; --gold-d:#b8860b;
-    --green:#34d399; --red:#fb7185; --blue:#60a5fa; --shadow:rgba(0,0,0,.3);
-    --goldcard:linear-gradient(150deg,#1c1a12,#131316);
+  /* ============================================================
+     THEME TOKENS — three skins share one layout
+     data-theme = "light" | "dark" | "terminal"
+     ============================================================ */
+  :root, [data-theme="light"]{
+    --bg:#faf8f4; --panel:#ffffff; --panel2:#f4f1ea; --line:#e6e1d7; --line2:#d9d2c4;
+    --txt:#1a1713; --dim:#5c574e; --faint:#8a8477;
+    --gold:#b8860b; --gold-ink:#8a6d1a; --markup:#c0392b;
+    --keep:#2f7d3c; --save:#2f7d3c;
+    --shadow:rgba(120,105,80,.10); --goldcard:linear-gradient(150deg,#fdf6e4,#faf0d6);
+    --verdict-bad:linear-gradient(140deg,#d63a4a,#b21e3a);
+    --verdict-ok:linear-gradient(140deg,#e08a1e,#c26a10);
+    --verdict-good:linear-gradient(140deg,#0f9d5c,#0a7d48);
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --num:"Inter",-apple-system,sans-serif; --numspace:-.02em;
+    --radius:16px; --radius-sm:10px;
   }
-  /* light */
-  [data-theme="light"]{
-    --bg:#faf8f4; --panel:#ffffff; --panel2:#f4f1ea; --line:#e5e0d6; --line2:#d4cdbf;
-    --txt:#1c1917; --dim:#57534e; --faint:#8c8579; --gold:#c8951a; --gold-d:#a67c12;
-    --green:#0f9d6e; --red:#dc4560; --blue:#2563eb; --shadow:rgba(120,110,90,.12);
-    --goldcard:linear-gradient(150deg,#fdf6e3,#fbf0d5);
+  [data-theme="dark"]{
+    --bg:#0d0d10; --panel:#18181c; --panel2:#0f0f12; --line:#27272d; --line2:#3a3a42;
+    --txt:#f2f2f4; --dim:#a6a6ae; --faint:#74747e;
+    --gold:#f2c14e; --gold-ink:#f2c14e; --markup:#f4787a;
+    --keep:#42d68c; --save:#42d68c;
+    --shadow:rgba(0,0,0,.35); --goldcard:linear-gradient(150deg,#1e1a11,#141418);
+    --verdict-bad:linear-gradient(140deg,#e11d48,#a5163a);
+    --verdict-ok:linear-gradient(140deg,#e08a1e,#b5680f);
+    --verdict-good:linear-gradient(140deg,#0f9d5c,#0a7d48);
+    --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --num:"Inter",-apple-system,sans-serif; --numspace:-.02em;
+    --radius:16px; --radius-sm:10px;
   }
+  [data-theme="terminal"]{
+    --bg:#080b08; --panel:#0d130d; --panel2:#0a0f0a; --line:#1b331b; --line2:#254525;
+    --txt:#c9f2c9; --dim:#6aa66a; --faint:#4a6a4a;
+    --gold:#7CFC7C; --gold-ink:#7CFC7C; --markup:#ff5c4d;
+    --keep:#7CFC7C; --save:#7CFC7C;
+    --shadow:rgba(0,0,0,.5); --goldcard:linear-gradient(150deg,#0d160d,#0a110a);
+    --verdict-bad:linear-gradient(140deg,#3a1210,#1a0d0c);
+    --verdict-ok:linear-gradient(140deg,#2a2410,#14120a);
+    --verdict-good:linear-gradient(140deg,#0d2a14,#0a1a0e);
+    --font:"IBM Plex Mono","SFMono-Regular",Menlo,monospace;
+    --num:"IBM Plex Mono",monospace; --numspace:.01em;
+    --radius:4px; --radius-sm:3px;
+  }
+
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:var(--bg);color:var(--txt);font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-feature-settings:"tnum" 1;padding:16px 14px 40px;max-width:460px;margin:0 auto;font-size:15px;transition:background .25s ease,color .25s ease}
-  h1{font-family:"Inter",-apple-system,sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em}
-  h1 .diamond{font-family:"Inter",sans-serif}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--font);font-feature-settings:"tnum" 1;
+    padding:14px clamp(12px,3.5vw,22px) calc(48px + env(safe-area-inset-bottom));
+    padding-top:calc(14px + env(safe-area-inset-top));
+    max-width:460px;margin:0 auto;font-size:15px;line-height:1.5;
+    transition:background .25s,color .25s}
+  input,button,textarea{touch-action:manipulation;font-family:var(--font)}
+
+  /* header */
+  h1{font-size:22px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
   h1 span{color:var(--gold)}
+  [data-theme="terminal"] h1{font-weight:700;letter-spacing:.04em;font-size:19px}
   .row{display:flex;align-items:center;justify-content:space-between}
-  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:2px}
-  .seg button{background:none;border:none;color:var(--faint);font-weight:700;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer}
-  .seg button.on{background:var(--gold);color:#0a0a0a}
-  .themeBtn{background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--dim);line-height:0;padding:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:38px;min-height:38px;transition:transform .05s,background .25s,color .25s}
-  .themeBtn:active{transform:scale(.9)}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;box-shadow:0 1px 3px var(--shadow);transition:background .25s ease,border-color .25s ease}
+  header.row{flex-wrap:wrap;gap:8px}
+  .hctl{display:flex;align-items:center;gap:8px}
+
+  /* segmented + theme controls */
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:2px}
+  .seg button{background:none;border:none;color:var(--faint);font-weight:700;font-size:12px;padding:5px 10px;border-radius:calc(var(--radius-sm) - 2px);cursor:pointer;min-height:32px}
+  .seg button.on{background:var(--gold);color:var(--bg)}
+  .iconBtn{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--dim);line-height:0;padding:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;transition:transform .05s,color .25s}
+  .iconBtn:active{transform:scale(.9)}
+  .themeSel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--dim);font-family:var(--font);font-size:12px;font-weight:700;padding:0 8px;min-height:40px;cursor:pointer}
+
+  /* cards */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:12px;box-shadow:0 1px 3px var(--shadow);transition:background .25s,border-color .25s}
   .card.gold{border-color:var(--gold);background:var(--goldcard)}
-  .card.rose{border-color:rgba(251,113,133,.3)}
-  .card.green{border-color:rgba(52,211,153,.3)}
-  .ttl{font-size:13px;font-weight:800;margin-bottom:10px}
-  .ttl.rose{color:var(--red)} .ttl.green{color:var(--green)}
-  .lbl{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin:10px 0 5px}
-  input{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--txt);font-size:16px;padding:11px 12px;outline:none}
+  .card.rose{border-color:color-mix(in srgb,var(--markup) 40%,transparent)}
+  .card.green{border-color:color-mix(in srgb,var(--keep) 40%,transparent)}
+
+  /* TIER 4 — labels & section titles */
+  .ttl{font-size:13px;font-weight:800;margin-bottom:12px;letter-spacing:-.01em}
+  [data-theme="terminal"] .ttl{font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--dim)}
+  .ttl.rose{color:var(--markup)} .ttl.green{color:var(--keep)}
+  .lbl{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:12px 0 6px}
+  .lbl .meta{color:var(--faint);font-weight:500;text-transform:none;letter-spacing:0}
+  [data-theme="terminal"] .lbl{color:var(--faint)}
+
+  /* inputs */
+  input{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:var(--radius-sm);color:var(--txt);font-size:16px;padding:12px;outline:none;min-height:48px;font-family:var(--num)}
   input:focus{border-color:var(--gold)}
-  textarea{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;color:var(--txt);font-size:14px;padding:11px 12px;outline:none;min-height:110px;resize:vertical;font-family:inherit;line-height:1.5}
+  textarea{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:var(--radius-sm);color:var(--txt);font-size:14px;padding:12px;outline:none;min-height:120px;resize:vertical;font-family:inherit;line-height:1.5}
   textarea:focus{border-color:var(--gold)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .chips{display:flex;gap:5px;margin-top:6px}
-  .chips button{background:none;border:1px solid var(--line);color:var(--faint);font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer}
-  .chips button.on{border-color:var(--gold);color:var(--gold)}
-  .btn{border:none;border-radius:12px;font-weight:800;font-size:14px;padding:10px 14px;cursor:pointer;transition:transform .05s}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+  .chips button{background:none;border:1px solid var(--line2);color:var(--dim);font-size:12px;font-weight:700;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;min-height:32px}
+  .chips button.on{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent)}
+
+  /* buttons */
+  .btn{border:none;border-radius:var(--radius-sm);font-weight:800;font-size:14px;padding:11px 14px;cursor:pointer;transition:transform .05s;font-family:var(--font)}
   .btn:active{transform:scale(.96)}
-  .btn.gold{background:var(--gold);color:#0a0a0a}
+  .btn.gold{background:var(--gold);color:var(--bg);min-height:44px}
   .btn.ghost{background:none;border:1px solid var(--line2);color:var(--dim)}
   .btn.wide{width:100%;margin-top:10px}
-  .rate-big{font-size:28px;font-weight:800;color:var(--gold);letter-spacing:-.02em}
+
+  /* TIER 1 for rate: the hero rate */
+  .rate-big{font-family:var(--num);font-size:30px;font-weight:800;color:var(--gold);letter-spacing:var(--numspace)}
   .rate-big small{font-size:13px;color:var(--faint);font-weight:600}
   .rate-sub{font-size:14px;color:var(--dim)}
-  .status{font-size:11px;color:var(--faint);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .status{font-size:12px;color:var(--faint);margin-top:8px;display:flex;align-items:center;gap:6px}
   .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
-  .err{color:var(--red);font-size:12px;margin-top:6px}
+  .err{color:var(--markup);font-size:12px;margin-top:6px}
+
   /* rate board */
-  .board{display:grid;grid-template-columns:44px 1fr 1fr 1fr;gap:4px;text-align:right;margin-top:8px}
-  .board .hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:4px 2px}
-  .board .kt{text-align:left;font-weight:800;color:var(--gold);font-size:13px;display:flex;align-items:center}
-  .board button{background:var(--panel2);border:none;border-radius:9px;color:var(--txt);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;padding:8px 4px;cursor:pointer}
-  .board button.copied{background:rgba(52,211,153,.2);color:var(--green)}
+  .board{display:grid;grid-template-columns:46px 1fr 1fr 1fr;gap:5px;text-align:right;margin-top:10px}
+  .board .hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:4px 2px}
+  .board .kt{text-align:left;font-weight:800;color:var(--gold);font-size:14px;display:flex;align-items:center}
+  .board button{background:var(--panel2);border:1px solid transparent;border-radius:var(--radius-sm);color:var(--txt);font-size:13px;font-weight:700;font-family:var(--num);font-variant-numeric:tabular-nums;padding:9px 4px;cursor:pointer;min-height:40px}
+  .board button.copied{background:color-mix(in srgb,var(--keep) 20%,transparent);color:var(--keep)}
+
   /* tabs */
-  .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:4px;margin-top:14px}
-  .tabs button{background:none;border:none;border-radius:12px;color:var(--faint);font-weight:800;font-size:13.5px;padding:10px 4px;cursor:pointer}
-  .tabs button.on{background:var(--gold);color:#0a0a0a}
-  /* results */
-  .rrow{display:flex;justify-content:space-between;padding:4px 0;font-size:13.5px}
-  .rrow .l{color:var(--dim)} .rrow .v{font-weight:600}
-  .rrow.strong .v{font-weight:800;color:var(--txt)}
-  .rrow.dim .l,.rrow.dim .v{color:var(--faint);font-weight:500}
-  .sep{border-top:1px solid var(--line);margin:7px 0}
-  .verdict{border-radius:16px;padding:15px;margin-top:12px;color:#fff}
-  .verdict.good{background:linear-gradient(140deg,#059669,#047857)}
-  .verdict.ok{background:linear-gradient(140deg,#d97706,#b45309)}
-  .verdict.bad{background:linear-gradient(140deg,#e11d48,#be123c)}
-  .verdict .vt{font-weight:800;font-size:15px}
-  .verdict p{font-size:13px;margin-top:5px;color:rgba(255,255,255,.87);line-height:1.45}
-  .inline-res{background:var(--panel2);border-radius:12px;padding:6px 10px;margin-top:10px}
-  .need{border:1px dashed var(--line2);border-radius:16px;padding:18px;text-align:center;color:var(--faint);font-size:13px;margin-top:12px}
-  .foot{text-align:center;font-size:11px;color:var(--faint);margin-top:20px;line-height:1.6}
+  .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px;margin-top:14px}
+  .tabs button{background:none;border:none;border-radius:calc(var(--radius) - 4px);color:var(--faint);font-weight:800;font-size:14px;padding:11px 4px;cursor:pointer;min-height:46px;font-family:var(--font)}
+  .tabs button.on{background:var(--gold);color:var(--bg)}
+  [data-theme="terminal"] .tabs button{text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+
+  /* ============================================================
+     RESULTS — the hierarchy fix
+     .rrow default = TIER 3 (breakdown). Modifiers promote/demote.
+     ============================================================ */
+  .rrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 0;font-size:14px}
+  .rrow .l{color:var(--dim);white-space:nowrap}
+  .rrow .v{font-weight:700;font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  /* leader dots so eye tracks label->value even when wide */
+  .rrow.lead .l{position:relative;flex:0 0 auto}
+  .rrow.lead::after{content:"";flex:1;border-bottom:1.5px dotted var(--line2);transform:translateY(-3px);margin:0 2px;order:1}
+  .rrow.lead .v{order:2}
+  /* TIER 2 — decision anchors: total, real gold value */
+  .rrow.anchor{padding:8px 0}
+  .rrow.anchor .l{font-weight:700;color:var(--txt);font-size:15px}
+  .rrow.anchor .v{font-size:22px;font-weight:800;color:var(--txt);letter-spacing:var(--numspace)}
+  .rrow.anchor.total .v{font-size:26px}
+  /* TIER 4 — demoted meta rows (net g, pure g) */
+  .rrow.meta{padding:3px 0;font-size:13px}
+  .rrow.meta .l{color:var(--faint)} .rrow.meta .v{color:var(--faint);font-weight:600}
+  /* TIER 3 tags: keep=gold, markup=red — must win over .meta, so declared after */
+  .rrow.keep .l,.rrow.keep .v{color:var(--gold-ink)}
+  .rrow.markup .l,.rrow.markup .v{color:var(--markup)}
+  .sep{border-top:1px solid var(--line);margin:10px 0}
+  .sep.strong{border-top:2px solid var(--line2)}
+
+  /* TIER 1 — verdict */
+  .verdict{border-radius:var(--radius);padding:16px;margin-top:12px;color:#fff;position:relative;overflow:hidden}
+  .verdict.good{background:var(--verdict-good)}
+  .verdict.ok{background:var(--verdict-ok)}
+  .verdict.bad{background:var(--verdict-bad)}
+  .verdict .vt{font-weight:800;font-size:14px;letter-spacing:.01em}
+  .verdict .vbig{font-family:var(--num);font-size:30px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:var(--numspace);line-height:1.05}
+  .verdict p{font-size:13px;margin-top:6px;color:rgba(255,255,255,.9);line-height:1.45}
+  /* terminal verdict: bordered, not filled */
+  [data-theme="terminal"] .verdict{border:1px solid var(--markup);color:var(--markup)}
+  [data-theme="terminal"] .verdict.good{border-color:var(--keep);color:var(--keep)}
+  [data-theme="terminal"] .verdict.ok{border-color:#e8d84a;color:#e8d84a}
+  [data-theme="terminal"] .verdict .vt{text-transform:uppercase;letter-spacing:.08em}
+  [data-theme="terminal"] .verdict .vbig{color:currentColor}
+  [data-theme="terminal"] .verdict p{color:color-mix(in srgb,currentColor 80%,transparent)}
+
+  .inline-res{background:var(--panel2);border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px}
+  .need{border:1px dashed var(--line2);border-radius:var(--radius);padding:18px;text-align:center;color:var(--faint);font-size:13px;margin-top:12px}
+
+  /* negotiation anchor — big prominent making number */
+  .negAnchor{text-align:center;padding:6px 0 14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .negAnchor .l{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+  .negAnchor .v{font-family:var(--num);font-size:32px;font-weight:800;color:var(--txt);letter-spacing:var(--numspace);line-height:1.1;margin-top:2px}
+  [data-theme="terminal"] .negAnchor .v{color:var(--gold)}
+
+  .foot{text-align:center;font-size:12px;color:var(--faint);margin-top:20px;line-height:1.6;max-width:560px;margin-left:auto;margin-right:auto}
   .hide{display:none!important}
   .mt{margin-top:10px}
-  .verdict .vbig{font-size:26px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:-.02em}
-  .rrow.big .v{font-size:19px;font-weight:800}
-  /* ---------- responsive / touch optimization ---------- */
-  html{-webkit-text-size-adjust:100%}
-  body{padding:14px clamp(10px,3.5vw,22px) calc(48px + env(safe-area-inset-bottom));padding-top:calc(14px + env(safe-area-inset-top))}
-  input,button,textarea{touch-action:manipulation}
-  .btn.gold{min-height:44px}
-  .tabs button{min-height:46px}
-  .seg button{min-height:32px}
-  .chips button{min-height:30px}
-  .board button{min-height:38px}
-  input{min-height:46px}
-  /* small phones */
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
   @media(max-width:360px){
     body{font-size:14px}
-    .rate-big{font-size:22px}
-    .board button{font-size:11.5px;padding:8px 2px}
+    .rate-big{font-size:24px}
+    .board button{font-size:12px;padding:8px 2px}
+    .rrow.anchor.total .v{font-size:23px}
   }
-  /* tablets / laptops: wider column, larger type, roomier cards */
-  @media(min-width:640px){
+  /* tablet */
+  @media(min-width:640px) and (max-width:899px){
     body{max-width:600px;font-size:16px;padding-top:28px}
     h1{font-size:26px}
-    .card{padding:20px;border-radius:18px}
-    .grid2{gap:14px}
-    .rate-big{font-size:32px}
-    .board button{font-size:14px;padding:11px 6px}
-    .board .kt{font-size:15px}
-    .tabs button{font-size:15px}
-    .rrow{font-size:14.5px}
-    .verdict{padding:18px}
-    .verdict .vbig{font-size:30px}
+    .card{padding:20px}
+    .rate-big{font-size:34px}
   }
-  /* ---- desktop two-column ---- */
+  /* ---- desktop: capped main column, filled rail, bigger hierarchy ---- */
   @media(min-width:900px){
-    body{max-width:1040px;padding-left:28px;padding-right:28px}
-    header.row{margin-bottom:6px}
-    .wrap{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
-    .side{position:sticky;top:20px;display:flex;flex-direction:column;gap:0}
+    body{max-width:1080px;padding-left:28px;padding-right:28px;font-size:16px}
+    header.row{margin-bottom:4px}
+    h1{font-size:28px}
+    .wrap{display:grid;grid-template-columns:320px minmax(0,560px);gap:32px;justify-content:center;align-items:start}
+    .side{position:sticky;top:20px;display:flex;flex-direction:column}
     .side .card{margin-top:14px}
     .side .card:first-child{margin-top:0}
+    .main{min-width:0}
     .main>*{margin-top:0}
     .main .tabs{margin-top:0;margin-bottom:14px}
+    .main .card{margin-top:14px}
     .foot{grid-column:1/-1}
-    /* verdict pops more on desktop */
-    .verdict .vbig{font-size:34px}
-    h1{font-size:30px}
+    /* hierarchy scales UP on desktop, labels stay readable */
+    .rate-big{font-size:34px}
+    .board button{font-size:14px}
+    .board .kt{font-size:15px}
+    .rrow{font-size:15px;padding:7px 0}
+    .rrow.anchor .v{font-size:24px}
+    .rrow.anchor.total .v{font-size:30px}
+    .rrow.meta{font-size:14px}
+    .verdict{padding:20px}
+    .verdict .vbig{font-size:38px}
+    .verdict .vt{font-size:15px}
+    .negAnchor .v{font-size:38px}
+    .ttl{font-size:14px}
   }
   @media(min-width:1200px){
-    body{max-width:1120px}
-    .wrap{grid-template-columns:380px 1fr;gap:28px}
+    body{max-width:1160px}
+    .wrap{grid-template-columns:360px minmax(0,600px);gap:40px}
   }
-  /* hover states for pointer devices only */
   @media(hover:hover){
-    .btn:hover,.tabs button:hover:not(.on),.board button:hover,.chips button:hover{filter:brightness(1.08);cursor:pointer}
+    .btn:hover,.tabs button:hover:not(.on),.board button:hover,.chips button:hover,.seg button:hover:not(.on){filter:brightness(1.08);cursor:pointer}
   }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 
 <header class="row">
   <h1><span>◆</span> Gold Negotiator</h1>
-  <div style="display:flex;align-items:center;gap:8px">
-    <button class="themeBtn" id="themeBtn" aria-label="Toggle light/dark mode"></button>
+  <div class="hctl">
+    <button class="iconBtn" id="lightToggle" aria-label="Toggle light or dark"></button>
+    <div class="seg" id="themeSeg">
+      <button data-mode="classic" id="mClassic">Classic</button>
+      <button data-mode="terminal" id="mTerminal">Terminal</button>
+    </div>
     <div class="seg" id="curSeg"></div>
   </div>
 </header>
@@ -239,28 +337,45 @@ const store={
 };
 
 // ============ theme ============
-const SUN_ICON=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
-const MOON_ICON=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
-const THEME_BAR={dark:"#09090b",light:"#faf8f4"};
-function applyTheme(t){
-  document.documentElement.setAttribute("data-theme",t);
-  document.getElementById("themeBtn").innerHTML = t==="dark" ? SUN_ICON : MOON_ICON;
+const THEME_BAR={dark:"#0d0d10",light:"#faf8f4",terminal:"#080b08"};
+const SUN=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
+const MOON=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
+
+// theme state: mode = classic|terminal ; classicVariant = light|dark
+function themeState(){
+  let mode=store.get("themeMode");
+  let variant=store.get("classicVariant");
+  if(mode!=="classic"&&mode!=="terminal") mode="classic";
+  if(variant!=="light"&&variant!=="dark"){
+    variant = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+  return {mode,variant};
+}
+function applyThemeState(){
+  const {mode,variant}=themeState();
+  const active = mode==="terminal" ? "terminal" : variant; // data-theme value
+  document.documentElement.setAttribute("data-theme",active);
+  // segmented highlight
+  document.querySelectorAll("#themeSeg button").forEach(b=>b.classList.toggle("on",b.dataset.mode===mode));
+  // light/dark toggle only visible in classic
+  const lt=document.getElementById("lightToggle");
+  if(mode==="terminal"){ lt.classList.add("hide"); }
+  else { lt.classList.remove("hide"); lt.innerHTML = variant==="dark" ? SUN : MOON; }
   const meta=document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.setAttribute("content",THEME_BAR[t]);
+  if(meta) meta.setAttribute("content",THEME_BAR[active]);
 }
 function initTheme(){
-  let t=store.get("theme");
-  if(t!=="dark"&&t!=="light"){
-    // first visit: follow the device preference
-    t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
-  }
-  applyTheme(t);
-  document.getElementById("themeBtn").onclick=()=>{
-    const next=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
-    applyTheme(next);
-    store.set("theme",next);
+  applyThemeState();
+  document.getElementById("mClassic").onclick=()=>{store.set("themeMode","classic");applyThemeState();};
+  document.getElementById("mTerminal").onclick=()=>{store.set("themeMode","terminal");applyThemeState();};
+  document.getElementById("lightToggle").onclick=()=>{
+    const {variant}=themeState();
+    store.set("classicVariant", variant==="dark"?"light":"dark");
+    applyThemeState();
   };
 }
+// back-compat shim
+function applyTheme(){applyThemeState();}
 
 let S={
   cur: store.get("cur")||"PKR",
@@ -372,7 +487,7 @@ function buyInputBlock(){
   return `
   <div class="grid2">
     <div>
-      <label class="lbl" style="margin-top:0">Total weight <span style="color:var(--faint);font-weight:500;text-transform:none">· as billed</span></label>
+      <label class="lbl" style="margin-top:0">Total weight <span class="meta">· as billed</span></label>
       <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('buy','w',this.value)">
       <div class="chips">
         <button class="${st.u==='gram'?'on':''}" onclick="upd('buy','u','gram')">g</button>
@@ -385,7 +500,7 @@ function buyInputBlock(){
       <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('buy','k','${k}')">${k}K</button>`).join("")}</div>
     </div>
   </div>
-  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· included in total above</span></label>
+  <label class="lbl">Wastage <span class="meta">· included in total above</span></label>
   <div style="display:flex;gap:8px">
     <input inputmode="decimal" placeholder="0" value="${st.wastage}" oninput="upd('buy','wastage',this.value)">
     <div class="seg" style="flex-shrink:0">
@@ -393,7 +508,7 @@ function buyInputBlock(){
       <button class="${st.wastageMode==='pct'?'on':''}" onclick="upd('buy','wastageMode','pct')">%</button>
     </div>
   </div>
-  <label class="lbl">Asking price <span style="color:var(--faint);font-weight:500;text-transform:none">· total incl. wastage + making</span></label>
+  <label class="lbl">Asking price <span class="meta">· total incl. wastage + making</span></label>
   <input inputmode="decimal" placeholder="what they want for it" value="${st.p}" oninput="upd('buy','p',this.value)">`;
 }
 function exNewInputBlock(){
@@ -401,7 +516,7 @@ function exNewInputBlock(){
   return `
   <div class="grid2">
     <div>
-      <label class="lbl" style="margin-top:0">Total weight <span style="color:var(--faint);font-weight:500;text-transform:none">· as billed</span></label>
+      <label class="lbl" style="margin-top:0">Total weight <span class="meta">· as billed</span></label>
       <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('exNew','w',this.value)">
       <div class="chips">
         <button class="${st.u==='gram'?'on':''}" onclick="upd('exNew','u','gram')">g</button>
@@ -414,7 +529,7 @@ function exNewInputBlock(){
       <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('exNew','k','${k}')">${k}K</button>`).join("")}</div>
     </div>
   </div>
-  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· included in total above</span></label>
+  <label class="lbl">Wastage <span class="meta">· included in total above</span></label>
   <div style="display:flex;gap:8px">
     <input inputmode="decimal" placeholder="0" value="${st.wastage}" oninput="upd('exNew','wastage',this.value)">
     <div class="seg" style="flex-shrink:0">
@@ -422,7 +537,7 @@ function exNewInputBlock(){
       <button class="${st.wastageMode==='pct'?'on':''}" onclick="upd('exNew','wastageMode','pct')">%</button>
     </div>
   </div>
-  <label class="lbl">Their price for it <span style="color:var(--faint);font-weight:500;text-transform:none">· total incl. wastage + making</span></label>
+  <label class="lbl">Their price for it <span class="meta">· total incl. wastage + making</span></label>
   <input inputmode="decimal" placeholder="what they're charging" value="${st.p}" oninput="upd('exNew','p',this.value)">`;
 }
 function itemBlock(key,priceLabel,pricePH){
@@ -515,62 +630,62 @@ function buyResults(){
   if(!c.ready)return "";
   const lvl=c.overNet<0?"bad":c.overNetPct<=10?"good":c.overNetPct<=20?"ok":"bad";
 
-  let html=`<div class="card">
-    ${row("Total weight billed",`${c.totalG.toFixed(3)} g`)}`;
-  if(c.wG>0){
-    html+=`${row("Net gold you take home",`${c.netG.toFixed(3)} g`,"dim")}
-    ${row("Pure gold (24K equiv.)",`${(c.netG*c.purity).toFixed(3)} g`,"dim")}
-    ${row("Wastage (in total)",`${c.wG.toFixed(3)} g = ${fmt(c.wastageVal,S.cur)}`,"dim")}
-    <div class="sep"></div>
-    ${row("Real gold value (net)",fmt(c.netGoldVal,S.cur),"strong")}`;
-  } else {
-    html+=`${row("Pure gold (24K equiv.)",`${(c.netG*c.purity).toFixed(3)} g`,"dim")}
-    ${row("Real gold value",fmt(c.netGoldVal,S.cur),"strong")}`;
-  }
-  html+=`<div class="sep"></div>
-    ${row("Making charge",fmt(c.making,S.cur))}
-    ${row("Total price",fmt(c.currentTotal,S.cur),"strong big")}
-    <div class="sep"></div>
-    ${row("Premium over real gold",`${fmt(c.overNet,S.cur)} (${pc(c.overNetPct)})`,"strong")}
-  </div>`;
-
-  html+=c.overNet<0
-    ?verdict("bad","Below real gold value — verify purity",[`Total is ${fmt(-c.overNet,S.cur)} under the melt value of the net gold. Great deal or the karat/weight isn't as claimed — test it.`])
+  // TIER 1 verdict first — the glance number
+  let html=(c.overNet<0
+    ?verdict("bad","Below real gold value — verify purity",[`Total is ${fmt(-c.overNet,S.cur)} under the melt value of the net gold. Great deal, or the karat/weight isn't as claimed — test it.`],`${fmt(c.overNet,S.cur)}`)
     :verdict(lvl,lvl==="good"?"Reasonable premium":lvl==="ok"?"Typical retail markup":"High premium — negotiate",[
       c.wG>0
-        ? `You're paying for ${c.billedG.toFixed(2)} g but only taking home ${c.netG.toFixed(2)} g.`
+        ? `Paying for ${c.billedG.toFixed(2)} g, taking home ${c.netG.toFixed(2)} g. The gap plus making is all margin.`
         : `You're paying ${pc(c.overNetPct)} over the gold itself — making + margin.`,
-    ],`${fmt(c.overNet,S.cur)} over real gold`);
+    ],`${fmt(c.overNet,S.cur)} over real gold`));
 
-  // ---- negotiation panel (making only) ----
+  // TIER 2/3 breakdown
+  html+=`<div class="card">
+    ${row("Total weight billed",`${c.totalG.toFixed(3)} g`,"meta lead")}
+    ${row("Net gold you take home",`${c.netG.toFixed(3)} g`,"meta lead keep")}
+    ${row("Pure gold · 24K equiv.",`${(c.netG*c.purity).toFixed(3)} g`,"meta lead")}`;
+  if(c.wG>0){
+    html+=`${row("Wastage in total",`${c.wG.toFixed(3)} g · ${fmt(c.wastageVal,S.cur)}`,"meta lead markup")}`;
+  }
+  html+=`<div class="sep"></div>
+    ${row("Real gold value",fmt(c.netGoldVal,S.cur),"anchor keep lead")}
+    ${row("Making charge",fmt(c.making,S.cur),"markup lead")}
+    <div class="sep strong"></div>
+    ${row("Total price",fmt(c.currentTotal,S.cur),"anchor total lead")}
+  </div>`;
+
+  // negotiation
   html+=negPanel("buy", c.making, c.negActive?{making:c.newMaking,total:c.newTotal,saved:c.saved}:null);
   return html;
 }
-// negotiation panel: preset chips + custom input, making only
+// negotiation panel: big making anchor + preset chips + custom input
 function negPanel(key, making, res){
   const st=S[key], presets=[15,25,35];
   let out=`<div class="card">
-    <div class="ttl">Negotiation — cut the making</div>
-    <label class="lbl" style="margin-top:0">Cut making by ${making>0?`<span style="color:var(--faint);font-weight:500;text-transform:none">· of ${fmt(making,S.cur)}</span>`:""}</label>
-    <div class="chips" style="margin-bottom:8px">
-      ${presets.map(p=>`<button class="${st.negMMode==='pct'&&n(st.negM)===p?'on':''}" style="padding:6px 12px;font-size:13px" onclick="negPreset('${key}',${p})">−${p}%</button>`).join("")}
+    <div class="ttl">Negotiate — cut the making</div>
+    <div class="negAnchor">
+      <div class="l">Making charge on the table</div>
+      <div class="v">${fmt(making,S.cur)}</div>
+    </div>
+    <div class="chips" style="margin-bottom:10px">
+      ${presets.map(p=>`<button class="${st.negMMode==='pct'&&n(st.negM)===p?'on':''}" style="flex:1;padding:9px 0;font-size:14px" onclick="negPreset('${key}',${p})">−${p}%</button>`).join("")}
     </div>
     <div style="display:flex;gap:8px">
-      <input inputmode="decimal" placeholder="custom" value="${st.negM}" oninput="upd('${key}','negM',this.value)">
+      <input inputmode="decimal" placeholder="custom amount" value="${st.negM}" oninput="upd('${key}','negM',this.value)">
       <div class="seg" style="flex-shrink:0">
         <button class="${st.negMMode==='pct'?'on':''}" onclick="upd('${key}','negMMode','pct')">%</button>
         <button class="${st.negMMode==='amt'?'on':''}" onclick="upd('${key}','negMMode','amt')">${SYM[S.cur]}</button>
       </div>
     </div>`;
   if(res){
-    out+=`<div class="inline-res" style="margin-top:12px">
-      ${row("New making",fmt(res.making,S.cur),"dim")}
-      ${res.cash!==undefined?row("New cash you pay",fmt(res.cash,S.cur),"dim"):""}
-      ${row(res.totalLabel||"New total",fmt(res.total,S.cur),"strong big")}
-      ${row("You save",fmt(res.saved,S.cur),"strong")}
+    out+=`<div class="inline-res" style="margin-top:14px">
+      ${row("New making",fmt(res.making,S.cur),"meta lead")}
+      ${res.cash!==undefined?row("New cash you pay",fmt(res.cash,S.cur),"meta lead"):""}
+      ${row(res.totalLabel||"New total",fmt(res.total,S.cur),"anchor total lead")}
+      ${row("You save",fmt(res.saved,S.cur),"lead keep")}
     </div>`;
   }
-  out+=`<p style="margin-top:10px;font-size:11.5px;color:var(--faint);line-height:1.5">Wastage is pure markup dressed as gold weight — jewelers rarely negotiate it, so focus on the making charge.</p>
+  out+=`<p style="margin-top:12px;font-size:12px;color:var(--faint);line-height:1.5">Wastage is pure markup dressed as gold weight — jewelers rarely negotiate it, so focus on the making charge.</p>
   </div>`;
   return out;
 }
@@ -584,21 +699,23 @@ function sellResults(){
   if(!rate())return needRate;
   if(!c.ready)return "";
   const lvl=c.cut<0?"good":c.cutPct<=3?"good":c.cutPct<=8?"ok":"bad";
-  let html=`<div class="card">
-    ${row("Pure gold (24K equivalent)",c.pg.toFixed(3)+" g")}
-    ${row("Market value of your gold",fmt(c.mv,S.cur),"strong")}
-    ${row("Their offer",fmt(c.off,S.cur))}
-    <div class="sep"></div>
-    ${row("Below market / their margin",`${fmt(c.cut,S.cur)} (${pc(c.cutPct)})`,"strong")}
-    ${row("Margin per tola",fmt(c.g?c.cut/c.g*TOLA:0,S.cur),"dim")}
-  </div>`;
-  html+=c.cut<0
-    ?verdict("good","Above market — take it",[`They're paying ${fmt(-c.cut,S.cur)} over melt value. Unusual — confirm terms, then accept.`])
+
+  let html=(c.cut<0
+    ?verdict("good","Above market — take it",[`They're paying ${fmt(-c.cut,S.cur)} over melt value. Unusual — confirm terms, then accept.`],`${fmt(-c.cut,S.cur)} above melt`)
     :verdict(lvl,lvl==="good"?"Strong offer":lvl==="ok"?"Standard buyback cut":"Lowball — push back",[
       `They keep ${pc(c.cutPct)} of your gold's value as margin.`,
-      `Your gold melts for ${fmt(c.mv,S.cur)} — anchor there and make them justify the gap.`,
-      lvl==="bad"?`Counter at ${fmt(c.mv*.96,S.cur)} (4% cut) — many dealers work at 2–5% on buyback.`:`A second quote costs nothing; even 1% is ${fmt(c.mv*.01,S.cur)}.`
-    ]);
+      lvl==="bad"?`Your gold melts for ${fmt(c.mv,S.cur)}. Counter near ${fmt(c.mv*.96,S.cur)} — dealers often work at 2–5% on buyback.`:`Melt value is ${fmt(c.mv,S.cur)} — anchor there.`
+    ],`${fmt(c.cut,S.cur)} below melt`));
+
+  html+=`<div class="card">
+    ${row("Pure gold · 24K equiv.",c.pg.toFixed(3)+" g","meta lead")}
+    ${row("Margin per tola",fmt(c.g?c.cut/c.g*TOLA:0,S.cur),"meta lead markup")}
+    <div class="sep"></div>
+    ${row("Market value of your gold",fmt(c.mv,S.cur),"anchor keep lead")}
+    ${row("Their offer",fmt(c.off,S.cur),"anchor total lead")}
+    <div class="sep strong"></div>
+    ${row("They keep",`${fmt(c.cut,S.cur)} · ${pc(c.cutPct)}`,"markup lead")}
+  </div>`;
   return html;
 }
 function calcEx(){
@@ -635,28 +752,29 @@ function calcEx(){
 }
 function exResults(){
   const c=calcEx();
-  // inline sub-results
-  $("exOldRes").innerHTML=c.oldReady?`<div class="inline-res">${row("Market value",fmt(c.om,S.cur),"dim")}${row("Dealer keeps on trade-in",`${fmt(c.cut,S.cur)} (${pc(c.cutPct)})`,"strong")}</div>`:"";
-  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${c.newWG>0?row("Wastage (in total)",`${c.newWG.toFixed(3)} g (${fmt(c.newWastageVal,S.cur)})`,"dim"):""}${row("Gold value (billed)",fmt(c.nm,S.cur),"dim")}${row("Making / premium charged",`${fmt(c.prem,S.cur)} (${pc(c.premPct)})`,"strong")}</div>`:"";
+  // inline sub-results under each piece
+  $("exOldRes").innerHTML=c.oldReady?`<div class="inline-res">${row("Market value",fmt(c.om,S.cur),"meta lead")}${row("Dealer keeps on trade-in",`${fmt(c.cut,S.cur)} · ${pc(c.cutPct)}`,"markup lead")}</div>`:"";
+  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${c.newWG>0?row("Wastage in total",`${c.newWG.toFixed(3)} g · ${fmt(c.newWastageVal,S.cur)}`,"meta lead markup"):""}${row("Gold value · billed",fmt(c.nm,S.cur),"meta lead keep")}${row("Making / premium",`${fmt(c.prem,S.cur)} · ${pc(c.premPct)}`,"markup lead")}</div>`:"";
   if(!rate())return needRate;
   if(!(c.oldReady&&c.newReady))return "";
   const cash=c.np-c.ooff, fair=c.nm-c.om, spread=c.prem+c.cut;
   const totPct=(c.nm+c.om)>0?spread/((c.nm+c.om)/2)*100:0;
   const lvl=totPct<=10?"good":totPct<=20?"ok":"bad";
-  let out=`<div class="card">
-    <div class="ttl">Deal summary</div>
-    ${row("Cash you pay on top",fmt(cash,S.cur),"strong big")}
-    ${row("Fair difference (pure market)",fmt(fair,S.cur))}
-    <div class="sep"></div>
-    ${row("Dealer take: trade-in cut",fmt(c.cut,S.cur),"dim")}
-    ${row("Dealer take: making/premium",fmt(c.prem,S.cur),"dim")}
-    ${row("Total dealer spread",fmt(spread,S.cur),"strong")}
-  </div>`+verdict(lvl,
-    lvl==="good"?"Tight spread — decent exchange":lvl==="ok"?"Normal exchange economics":"Wide spread — they're double-dipping",[
+
+  let out=verdict(lvl,
+    lvl==="good"?"Tight spread — decent exchange":lvl==="ok"?"Normal exchange economics":"Wide spread — double-dipping",[
     `${fmt(c.cut,S.cur)} shaved off your old gold + ${fmt(c.prem,S.cur)} on the new piece.`,
     lvl==="bad"?"Demand full melt value on your old gold first, then attack the making.":"Tip: lock in the trade-in at full melt value before discussing the new piece."
   ],`${fmt(spread,S.cur)} dealer spread`);
-  // negotiation on the new piece's making
+
+  out+=`<div class="card">
+    <div class="ttl">Deal summary</div>
+    ${row("Fair difference · pure market",fmt(fair,S.cur),"meta lead")}
+    ${row("Dealer take: trade-in cut",fmt(c.cut,S.cur),"meta lead markup")}
+    ${row("Dealer take: making",fmt(c.prem,S.cur),"meta lead markup")}
+    <div class="sep strong"></div>
+    ${row("Cash you pay on top",fmt(cash,S.cur),"anchor total lead")}
+  </div>`;
   out+=negPanel("exNew", c.prem, c.negActive?{making:c.negPrem,cash:c.negNp-c.ooff,total:c.negNp,totalLabel:"New piece price",saved:c.np-c.negNp}:null);
   return out;
 }

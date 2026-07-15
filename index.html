@@ -200,10 +200,14 @@ let S={
   mode:"buy",
   cache: store.get("rateCache")||null, // {rates:{PKR,USD,CAD} per g 24K, at, src, manual}
   manualUnit:"tola",
-  buy:{w:"",u:"gram",k:"22",p:""},
+  buy:{w:"",u:"gram",k:"22",p:"",
+       wastage:"", wastageMode:"pct",      // pct = % of net weight, g = extra grams
+       makingKnown:false, making:"", makingMode:"perG", // if user knows making separately
+       negW:"", negWMode:"pct",            // negotiate wastage down: pct or amount(grams)
+       negM:"", negMMode:"pct"},           // negotiate making down: pct or amount(cash)
   sell:{w:"",u:"gram",k:"22",p:""},
   exOld:{w:"",u:"gram",k:"22",p:""},
-  exNew:{w:"",u:"gram",k:"22",p:""}
+  exNew:{w:"",u:"gram",k:"22",p:"", wastage:"", wastageMode:"pct"}
 };
 const rate=()=>S.cache?.rates?.[S.cur]||0;
 
@@ -297,6 +301,64 @@ $("copyAll").onclick=()=>{
 };
 
 // ============ item input block ============
+function buyInputBlock(){
+  const st=S.buy;
+  return `
+  <div class="grid2">
+    <div>
+      <label class="lbl" style="margin-top:0">Net weight <span style="color:var(--faint);font-weight:500;text-transform:none">· on scale</span></label>
+      <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('buy','w',this.value)">
+      <div class="chips">
+        <button class="${st.u==='gram'?'on':''}" onclick="upd('buy','u','gram')">g</button>
+        <button class="${st.u==='tola'?'on':''}" onclick="upd('buy','u','tola')">tola</button>
+      </div>
+    </div>
+    <div>
+      <label class="lbl" style="margin-top:0">Karat</label>
+      <input inputmode="decimal" placeholder="22" value="${st.k}" oninput="upd('buy','k',this.value)">
+      <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('buy','k','${k}')">${k}K</button>`).join("")}</div>
+    </div>
+  </div>
+  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· extra weight charged on top</span></label>
+  <div style="display:flex;gap:8px">
+    <input inputmode="decimal" placeholder="0" value="${st.wastage}" oninput="upd('buy','wastage',this.value)">
+    <div class="seg" style="flex-shrink:0">
+      <button class="${st.wastageMode==='pct'?'on':''}" onclick="upd('buy','wastageMode','pct')">%</button>
+      <button class="${st.wastageMode==='g'?'on':''}" onclick="upd('buy','wastageMode','g')">g</button>
+    </div>
+  </div>
+  <label class="lbl">Asking price <span style="color:var(--faint);font-weight:500;text-transform:none">· total incl. wastage + making</span></label>
+  <input inputmode="decimal" placeholder="what they want for it" value="${st.p}" oninput="upd('buy','p',this.value)">`;
+}
+function exNewInputBlock(){
+  const st=S.exNew;
+  return `
+  <div class="grid2">
+    <div>
+      <label class="lbl" style="margin-top:0">Net weight <span style="color:var(--faint);font-weight:500;text-transform:none">· on scale</span></label>
+      <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('exNew','w',this.value)">
+      <div class="chips">
+        <button class="${st.u==='gram'?'on':''}" onclick="upd('exNew','u','gram')">g</button>
+        <button class="${st.u==='tola'?'on':''}" onclick="upd('exNew','u','tola')">tola</button>
+      </div>
+    </div>
+    <div>
+      <label class="lbl" style="margin-top:0">Karat</label>
+      <input inputmode="decimal" placeholder="22" value="${st.k}" oninput="upd('exNew','k',this.value)">
+      <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('exNew','k','${k}')">${k}K</button>`).join("")}</div>
+    </div>
+  </div>
+  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· extra weight on new piece</span></label>
+  <div style="display:flex;gap:8px">
+    <input inputmode="decimal" placeholder="0" value="${st.wastage}" oninput="upd('exNew','wastage',this.value)">
+    <div class="seg" style="flex-shrink:0">
+      <button class="${st.wastageMode==='pct'?'on':''}" onclick="upd('exNew','wastageMode','pct')">%</button>
+      <button class="${st.wastageMode==='g'?'on':''}" onclick="upd('exNew','wastageMode','g')">g</button>
+    </div>
+  </div>
+  <label class="lbl">Their price for it <span style="color:var(--faint);font-weight:500;text-transform:none">· total incl. wastage + making</span></label>
+  <input inputmode="decimal" placeholder="what they're charging" value="${st.p}" oninput="upd('exNew','p',this.value)">`;
+}
 function itemBlock(key,priceLabel,pricePH){
   const st=S[key];
   return `
@@ -320,7 +382,9 @@ function itemBlock(key,priceLabel,pricePH){
 }
 window.upd=(key,f,v)=>{
   S[key][f]=v;
-  if(f==="u"||f==="k"){renderMode()} else {renderResultsOnly()}
+  // unit/karat/wastage-unit toggles live in an input card → rebuild it (button click, safe to blur)
+  if(f==="u"||f==="k"||f==="wastageMode"){renderMode()}
+  else {renderResultsOnly()}
 };
 
 function verdict(level,title,lines){
@@ -331,7 +395,49 @@ const needRate='<div class="need">Set the market rate above first ↑</div>';
 const row=(l,v,cls="")=>`<div class="rrow ${cls}"><span class="l">${l}</span><span class="v">${v}</span></div>`;
 
 // ============ calculations & render per mode ============
+// wastage weight in grams, given net grams + settings
+function wastageGrams(netG, val, mode){
+  return mode==="g" ? n(val) : netG*(n(val)/100);
+}
 function calcBuy(){
+  const st=S.buy;
+  const netG=toG(st.w,st.u);                 // scale weight
+  const purity=n(st.k)/24;
+  const r=rate();
+
+  const wG=wastageGrams(netG, st.wastage, st.wastageMode); // extra grams charged
+  const billedG=netG+wG;                     // what you actually pay gold on
+
+  const netGoldVal=netG*purity*r;            // real gold you take home
+  const wastageVal=wG*purity*r;              // gold value of the wastage add-on
+  const billedGoldVal=netGoldVal+wastageVal; // gold value on billed weight
+
+  const ask=n(st.p);
+  // making = whatever's left after gold value on billed weight (unless user pins it)
+  const making = st.makingKnown && st.making!=="" ? n(st.making) : (ask - billedGoldVal);
+
+  const currentTotal = st.makingKnown && st.making!=="" ? (billedGoldVal + making) : ask;
+  const overNet = currentTotal - netGoldVal; // total premium over real gold
+  const overNetPct = netGoldVal>0 ? overNet/netGoldVal*100 : 0;
+
+  // ---- negotiation: reduce wastage grams and making cash ----
+  const negWG = st.negWMode==="g" ? n(st.negW) : wG*(n(st.negW)/100); // grams removed
+  const newWG = Math.max(0, wG - negWG);
+  const newWastageVal = newWG*purity*r;
+
+  const negMcash = st.negMMode==="amt" ? n(st.negM) : making*(n(st.negM)/100);
+  const newMaking = Math.max(0, making - negMcash);
+
+  const newTotal = netGoldVal + newWastageVal + newMaking;
+  const saved = currentTotal - newTotal;
+  const negActive = (n(st.negW)>0 || n(st.negM)>0);
+
+  return {netG,purity,r,wG,billedG,netGoldVal,wastageVal,billedGoldVal,ask,making,
+          currentTotal,overNet,overNetPct,
+          newWG,newWastageVal,newMaking,newTotal,saved,negActive,
+          ready:r>0&&netG>0&&(ask>0||(st.makingKnown&&st.making!==""))};
+}
+function calcBuy_OLD(){
   const st=S.buy,g=toG(st.w,st.u),pg=g*(n(st.k)/24),gv=pg*rate(),ask=n(st.p);
   return {g,pg,gv,ask,mk:ask-gv,mkPct:gv>0?(ask-gv)/gv*100:0,ready:rate()>0&&g>0&&ask>0};
 }
@@ -339,24 +445,59 @@ function buyResults(){
   const c=calcBuy();
   if(!rate())return needRate;
   if(!c.ready)return "";
-  const lvl=c.mk<0?"bad":c.mkPct<=8?"good":c.mkPct<=16?"ok":"bad";
+  const lvl=c.overNet<0?"bad":c.overNetPct<=10?"good":c.overNetPct<=20?"ok":"bad";
+
   let html=`<div class="card">
-    ${row("Pure gold (24K equivalent)",c.pg.toFixed(3)+" g")}
-    ${row("Gold value at market",fmt(c.gv,S.cur),"strong")}
-    ${row("Asking price",fmt(c.ask,S.cur))}
+    ${row("Net gold you take home",`${c.netG.toFixed(3)} g → ${(c.netG*c.purity).toFixed(3)} g pure`)}
+    ${row("Real gold value (net)",fmt(c.netGoldVal,S.cur),"strong")}`;
+  if(c.wG>0){
+    html+=`<div class="sep"></div>
+    ${row("Wastage added",`+${c.wG.toFixed(3)} g → billed ${c.billedG.toFixed(3)} g`,"dim")}
+    ${row("You pay gold on wastage",fmt(c.wastageVal,S.cur),"dim")}`;
+  }
+  html+=`<div class="sep"></div>
+    ${row("Making charge",fmt(c.making,S.cur))}
+    ${row("Total price",fmt(c.currentTotal,S.cur),"strong")}
     <div class="sep"></div>
-    ${row("Implied making / premium",`${fmt(c.mk,S.cur)} (${pc(c.mkPct)})`,"strong")}
-    ${row("Premium per gram",fmt2(c.g?c.mk/c.g:0,S.cur),"dim")}
-    ${row("Premium per tola",fmt(c.g?c.mk/c.g*TOLA:0,S.cur),"dim")}
+    ${row("Premium over real gold",`${fmt(c.overNet,S.cur)} (${pc(c.overNetPct)})`,"strong")}
   </div>`;
-  html+=c.mk<0
-    ?verdict("bad","Below gold value — verify purity!",[`Asking is ${fmt(-c.mk,S.cur)} under melt value. Either a great deal or the karat/weight isn't as claimed. Test it.`])
+
+  html+=c.overNet<0
+    ?verdict("bad","Below real gold value — verify purity!",[`Total is ${fmt(-c.overNet,S.cur)} under the melt value of the net gold. Great deal or the karat/weight isn't as claimed — test it.`])
     :verdict(lvl,lvl==="good"?"Reasonable premium":lvl==="ok"?"Typical retail markup":"High premium — negotiate",[
-      `You're paying ${pc(c.mkPct)} over the gold itself — that's making charge + dealer margin.`,
-      `Every ${fmt(c.gv*.01,S.cur)} you negotiate off cuts the premium by 1%.`,
-      lvl==="bad"?`Counter near ${fmt(c.gv*1.08,S.cur)} (8% premium) and settle from there.`:`Walk-away anchor: melt value is ${fmt(c.gv,S.cur)}.`
+      c.wG>0
+        ? `You're paying for ${c.billedG.toFixed(2)} g but only taking home ${c.netG.toFixed(2)} g. The ${c.wG.toFixed(2)} g wastage (${fmt(c.wastageVal,S.cur)}) plus ${fmt(c.making,S.cur)} making is all margin.`
+        : `You're paying ${pc(c.overNetPct)} over the gold itself — making + margin.`,
+      `Wastage is the softest target — it's pure markup dressed as gold weight. Push it toward zero first.`,
     ]);
+
+  // ---- negotiation panel ----
+  html+=`<div class="card">
+    <div class="ttl">🤝 Negotiation — reduce wastage &amp; making</div>
+    ${negInput("negW","Cut wastage by",c.wG?`max ${c.wG.toFixed(2)} g`:"add wastage first",["pct","%"],["g","g"])}
+    ${negInput("negM","Cut making by",c.making>0?`of ${fmt(c.making,S.cur)}`:"",["pct","%"],["amt",SYM[S.cur]])}`;
+  if(c.negActive){
+    html+=`<div class="inline-res" style="margin-top:12px">
+      ${row("New wastage",`${c.newWG.toFixed(3)} g (${fmt(c.newWastageVal,S.cur)})`,"dim")}
+      ${row("New making",fmt(c.newMaking,S.cur),"dim")}
+      ${row("New total",fmt(c.newTotal,S.cur),"strong")}
+      ${row("You save",fmt(c.saved,S.cur),"strong")}
+    </div>`;
+  }
+  html+=`</div>`;
   return html;
+}
+// negotiation input with amount/percent toggle
+function negInput(field,label,hint,modeA,modeB){
+  const st=S.buy, val=st[field], mode=st[field+"Mode"];
+  return `<label class="lbl">${label}${hint?` <span style="color:var(--faint);font-weight:500;text-transform:none">· ${hint}</span>`:""}</label>
+  <div style="display:flex;gap:8px">
+    <input inputmode="decimal" placeholder="0" value="${val}" oninput="upd('buy','${field}',this.value)">
+    <div class="seg" style="flex-shrink:0">
+      <button class="${mode===modeA[0]?'on':''}" onclick="upd('buy','${field}Mode','${modeA[0]}')">${modeA[1]}</button>
+      <button class="${mode===modeB[0]?'on':''}" onclick="upd('buy','${field}Mode','${modeB[0]}')">${modeB[1]}</button>
+    </div>
+  </div>`;
 }
 function calcSell(){
   const st=S.sell,g=toG(st.w,st.u),pg=g*(n(st.k)/24),mv=pg*rate(),off=n(st.p);
@@ -387,17 +528,24 @@ function sellResults(){
 function calcEx(){
   const o=S.exOld,w=S.exNew;
   const og=toG(o.w,o.u),opg=og*(n(o.k)/24),om=opg*rate(),ooff=n(o.p);
-  const ng=toG(w.w,w.u),npg=ng*(n(w.k)/24),nm=npg*rate(),np=n(w.p);
+
+  const ng=toG(w.w,w.u), npurity=n(w.k)/24;
+  const newWG=wastageGrams(ng, w.wastage, w.wastageMode); // wastage grams on new piece
+  const newNetGold=ng*npurity*rate();          // real gold in new piece
+  const newWastageVal=newWG*npurity*rate();    // gold charged on wastage
+  const nm=newNetGold+newWastageVal;           // "market" gold value on billed weight
+  const np=n(w.p);
   return {
     om,ooff,cut:om-ooff,cutPct:om>0?(om-ooff)/om*100:0,oldReady:rate()>0&&og>0&&ooff>0,
-    nm,np,prem:np-nm,premPct:nm>0?(np-nm)/nm*100:0,newReady:rate()>0&&ng>0&&np>0
+    ng,newWG,newNetGold,newWastageVal,nm,np,prem:np-nm,premPct:nm>0?(np-nm)/nm*100:0,
+    newReady:rate()>0&&ng>0&&np>0
   };
 }
 function exResults(){
   const c=calcEx();
   // inline sub-results
   $("exOldRes").innerHTML=c.oldReady?`<div class="inline-res">${row("Market value",fmt(c.om,S.cur),"dim")}${row("Dealer keeps on trade-in",`${fmt(c.cut,S.cur)} (${pc(c.cutPct)})`,"strong")}</div>`:"";
-  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${row("Market value",fmt(c.nm,S.cur),"dim")}${row("Making / premium charged",`${fmt(c.prem,S.cur)} (${pc(c.premPct)})`,"strong")}</div>`:"";
+  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${c.newWG>0?row("Wastage added",`+${c.newWG.toFixed(3)} g (${fmt(c.newWastageVal,S.cur)})`,"dim"):""}${row("Gold value (billed)",fmt(c.nm,S.cur),"dim")}${row("Making / premium charged",`${fmt(c.prem,S.cur)} (${pc(c.premPct)})`,"strong")}</div>`:"";
   if(!rate())return needRate;
   if(!(c.oldReady&&c.newReady))return "";
   const cash=c.np-c.ooff, fair=c.nm-c.om, spread=c.prem+c.cut;
@@ -423,21 +571,33 @@ function exResults(){
 function renderMode(){
   ["Buy","Sell","Exchange"].forEach(m=>$("mode"+m).classList.toggle("hide",S.mode!==m.toLowerCase()));
   if(S.mode==="buy"){
-    $("modeBuy").innerHTML=`<div class="card"><div class="ttl">The piece they're offering</div>${itemBlock("buy","Asking price","what they want for it")}</div><div id="buyRes"></div>`;
+    $("modeBuy").innerHTML=`<div class="card"><div class="ttl">The piece they're offering</div>${buyInputBlock()}</div><div id="buyRes"></div>`;
   } else if(S.mode==="sell"){
     $("modeSell").innerHTML=`<div class="card"><div class="ttl">Your piece</div>${itemBlock("sell","Shopkeeper's offer","what they'll pay you")}</div><div id="sellRes"></div>`;
   } else {
     $("modeExchange").innerHTML=
       `<div class="card rose"><div class="ttl rose">Your old piece (trading in)</div>${itemBlock("exOld","Their offer for it","credit they're giving you")}<div id="exOldRes"></div></div>
-       <div class="card green"><div class="ttl green">New piece (taking out)</div>${itemBlock("exNew","Their price for it","what they're charging")}<div id="exNewRes"></div></div>
+       <div class="card green"><div class="ttl green">New piece (taking out)</div>${exNewInputBlock()}<div id="exNewRes"></div></div>
        <div id="exRes"></div>`;
   }
   renderResultsOnly();
 }
 function renderResultsOnly(){
+  // remember which negotiation input was focused + caret, restore after innerHTML swap
+  const act=document.activeElement;
+  let focusInfo=null;
+  if(act&&act.tagName==="INPUT"&&act.getAttribute("oninput")){
+    const m=act.getAttribute("oninput").match(/upd\('(\w+)','(\w+)'/);
+    if(m) focusInfo={key:m[1],field:m[2],start:act.selectionStart,end:act.selectionEnd};
+  }
   if(S.mode==="buy"&&$("buyRes"))$("buyRes").innerHTML=buyResults();
   if(S.mode==="sell"&&$("sellRes"))$("sellRes").innerHTML=sellResults();
   if(S.mode==="exchange"&&$("exRes"))$("exRes").innerHTML=exResults();
+  if(focusInfo){
+    const sel=`#${S.mode==='buy'?'buyRes':S.mode==='exchange'?'exRes':'sellRes'} input[oninput*="'${focusInfo.field}'"]`;
+    const el=document.querySelector(sel);
+    if(el){el.focus();try{el.setSelectionRange(focusInfo.start,focusInfo.end)}catch(e){}}
+  }
 }
 
 // ============ wiring ============

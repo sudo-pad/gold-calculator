@@ -8,7 +8,7 @@ A free, single-file web app for buying, selling, and exchanging gold jewelry wit
 
 ## Features
 
-- **Live rates, three currencies** — international spot gold converted to PKR, USD, and CAD via public APIs (no API key). Manual entry (per tola or per gram) to match the local bazaar rate on the day.
+- **Live rates, 11 currencies** — international spot gold converted to PKR, INR, USD, CAD, GBP, EUR, AED, SAR, MYR, IDR, and AUD via public APIs (no API key). One fetch prices all currencies. Manual entry (per tola or per gram) to match the local bazaar rate on the day.
 - **Rate board** — tap-to-copy grid of 24K / 22K / 21K / 18K prices per gram, 10g, and tola. "Copy all" formats the whole board for WhatsApp.
 - **Buying** — enter the *total billed weight*, karat, and any wastage; the app derives the net gold you actually take home, values it, and exposes the making charge and premium over real gold.
 - **Selling** — see how far a dealer's offer sits below melt value and the margin they're keeping.
@@ -49,5 +49,3 @@ Plain HTML, CSS, and vanilla JavaScript — no framework, no tracking, no backen
 MIT — see [LICENSE](LICENSE).
 
 ---
-
-Built by [Comence](https://comence.io).

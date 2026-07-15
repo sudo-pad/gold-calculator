@@ -306,7 +306,7 @@ function buyInputBlock(){
   return `
   <div class="grid2">
     <div>
-      <label class="lbl" style="margin-top:0">Net weight <span style="color:var(--faint);font-weight:500;text-transform:none">· on scale</span></label>
+      <label class="lbl" style="margin-top:0">Total weight <span style="color:var(--faint);font-weight:500;text-transform:none">· as billed</span></label>
       <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('buy','w',this.value)">
       <div class="chips">
         <button class="${st.u==='gram'?'on':''}" onclick="upd('buy','u','gram')">g</button>
@@ -319,7 +319,7 @@ function buyInputBlock(){
       <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('buy','k','${k}')">${k}K</button>`).join("")}</div>
     </div>
   </div>
-  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· extra weight charged on top</span></label>
+  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· included in total above</span></label>
   <div style="display:flex;gap:8px">
     <input inputmode="decimal" placeholder="0" value="${st.wastage}" oninput="upd('buy','wastage',this.value)">
     <div class="seg" style="flex-shrink:0">
@@ -335,7 +335,7 @@ function exNewInputBlock(){
   return `
   <div class="grid2">
     <div>
-      <label class="lbl" style="margin-top:0">Net weight <span style="color:var(--faint);font-weight:500;text-transform:none">· on scale</span></label>
+      <label class="lbl" style="margin-top:0">Total weight <span style="color:var(--faint);font-weight:500;text-transform:none">· as billed</span></label>
       <input inputmode="decimal" placeholder="0" value="${st.w}" oninput="upd('exNew','w',this.value)">
       <div class="chips">
         <button class="${st.u==='gram'?'on':''}" onclick="upd('exNew','u','gram')">g</button>
@@ -348,7 +348,7 @@ function exNewInputBlock(){
       <div class="chips">${["24","22","21","18"].map(k=>`<button class="${st.k===k?'on':''}" onclick="upd('exNew','k','${k}')">${k}K</button>`).join("")}</div>
     </div>
   </div>
-  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· extra weight on new piece</span></label>
+  <label class="lbl">Wastage <span style="color:var(--faint);font-weight:500;text-transform:none">· included in total above</span></label>
   <div style="display:flex;gap:8px">
     <input inputmode="decimal" placeholder="0" value="${st.wastage}" oninput="upd('exNew','wastage',this.value)">
     <div class="seg" style="flex-shrink:0">
@@ -401,27 +401,35 @@ function wastageGrams(netG, val, mode){
 }
 function calcBuy(){
   const st=S.buy;
-  const netG=toG(st.w,st.u);                 // scale weight
+  const totalG=toG(st.w,st.u);               // total/billed weight (what seller quotes)
   const purity=n(st.k)/24;
   const r=rate();
 
-  const wG=wastageGrams(netG, st.wastage, st.wastageMode); // extra grams charged
-  const billedG=netG+wG;                     // what you actually pay gold on
+  // derive net + wastage from total, depending on how wastage was quoted
+  let wG, netG;
+  if(st.wastageMode==="g"){
+    wG=Math.min(n(st.wastage), totalG);
+    netG=Math.max(0, totalG-wG);
+  } else { // percent of net: total = net*(1+p/100)
+    const p=n(st.wastage)/100;
+    netG = p>-1 ? totalG/(1+p) : totalG;
+    wG = totalG-netG;
+  }
+  const billedG=totalG;
 
   const netGoldVal=netG*purity*r;            // real gold you take home
   const wastageVal=wG*purity*r;              // gold value of the wastage add-on
-  const billedGoldVal=netGoldVal+wastageVal; // gold value on billed weight
+  const billedGoldVal=netGoldVal+wastageVal; // = totalG*purity*r
 
   const ask=n(st.p);
-  // making = whatever's left after gold value on billed weight (unless user pins it)
   const making = st.makingKnown && st.making!=="" ? n(st.making) : (ask - billedGoldVal);
 
   const currentTotal = st.makingKnown && st.making!=="" ? (billedGoldVal + making) : ask;
-  const overNet = currentTotal - netGoldVal; // total premium over real gold
+  const overNet = currentTotal - netGoldVal;
   const overNetPct = netGoldVal>0 ? overNet/netGoldVal*100 : 0;
 
   // ---- negotiation: reduce wastage grams and making cash ----
-  const negWG = st.negWMode==="g" ? n(st.negW) : wG*(n(st.negW)/100); // grams removed
+  const negWG = st.negWMode==="g" ? n(st.negW) : wG*(n(st.negW)/100);
   const newWG = Math.max(0, wG - negWG);
   const newWastageVal = newWG*purity*r;
 
@@ -432,10 +440,10 @@ function calcBuy(){
   const saved = currentTotal - newTotal;
   const negActive = (n(st.negW)>0 || n(st.negM)>0);
 
-  return {netG,purity,r,wG,billedG,netGoldVal,wastageVal,billedGoldVal,ask,making,
+  return {netG,purity,r,wG,totalG,billedG,netGoldVal,wastageVal,billedGoldVal,ask,making,
           currentTotal,overNet,overNetPct,
           newWG,newWastageVal,newMaking,newTotal,saved,negActive,
-          ready:r>0&&netG>0&&(ask>0||(st.makingKnown&&st.making!==""))};
+          ready:r>0&&totalG>0&&(ask>0||(st.makingKnown&&st.making!==""))};
 }
 function calcBuy_OLD(){
   const st=S.buy,g=toG(st.w,st.u),pg=g*(n(st.k)/24),gv=pg*rate(),ask=n(st.p);
@@ -448,12 +456,15 @@ function buyResults(){
   const lvl=c.overNet<0?"bad":c.overNetPct<=10?"good":c.overNetPct<=20?"ok":"bad";
 
   let html=`<div class="card">
-    ${row("Net gold you take home",`${c.netG.toFixed(3)} g → ${(c.netG*c.purity).toFixed(3)} g pure`)}
-    ${row("Real gold value (net)",fmt(c.netGoldVal,S.cur),"strong")}`;
+    ${row("Total weight billed",`${c.totalG.toFixed(3)} g`)}`;
   if(c.wG>0){
-    html+=`<div class="sep"></div>
-    ${row("Wastage added",`+${c.wG.toFixed(3)} g → billed ${c.billedG.toFixed(3)} g`,"dim")}
-    ${row("You pay gold on wastage",fmt(c.wastageVal,S.cur),"dim")}`;
+    html+=`${row("Net gold you take home",`${c.netG.toFixed(3)} g → ${(c.netG*c.purity).toFixed(3)} g pure`,"dim")}
+    ${row("Wastage (in total)",`${c.wG.toFixed(3)} g = ${fmt(c.wastageVal,S.cur)}`,"dim")}
+    <div class="sep"></div>
+    ${row("Real gold value (net)",fmt(c.netGoldVal,S.cur),"strong")}`;
+  } else {
+    html+=`${row("Pure gold",`${(c.netG*c.purity).toFixed(3)} g`,"dim")}
+    ${row("Real gold value",fmt(c.netGoldVal,S.cur),"strong")}`;
   }
   html+=`<div class="sep"></div>
     ${row("Making charge",fmt(c.making,S.cur))}
@@ -529,11 +540,20 @@ function calcEx(){
   const o=S.exOld,w=S.exNew;
   const og=toG(o.w,o.u),opg=og*(n(o.k)/24),om=opg*rate(),ooff=n(o.p);
 
-  const ng=toG(w.w,w.u), npurity=n(w.k)/24;
-  const newWG=wastageGrams(ng, w.wastage, w.wastageMode); // wastage grams on new piece
-  const newNetGold=ng*npurity*rate();          // real gold in new piece
+  const totalNg=toG(w.w,w.u), npurity=n(w.k)/24;   // total/billed weight of new piece
+  let newWG, newNetG;
+  if(w.wastageMode==="g"){
+    newWG=Math.min(n(w.wastage), totalNg);
+    newNetG=Math.max(0, totalNg-newWG);
+  } else {
+    const p=n(w.wastage)/100;
+    newNetG = p>-1 ? totalNg/(1+p) : totalNg;
+    newWG = totalNg-newNetG;
+  }
+  const ng=totalNg;                            // keep ng as total for ready-check
+  const newNetGold=newNetG*npurity*rate();     // real gold you take home
   const newWastageVal=newWG*npurity*rate();    // gold charged on wastage
-  const nm=newNetGold+newWastageVal;           // "market" gold value on billed weight
+  const nm=newNetGold+newWastageVal;           // gold value on billed weight
   const np=n(w.p);
   return {
     om,ooff,cut:om-ooff,cutPct:om>0?(om-ooff)/om*100:0,oldReady:rate()>0&&og>0&&ooff>0,
@@ -545,7 +565,7 @@ function exResults(){
   const c=calcEx();
   // inline sub-results
   $("exOldRes").innerHTML=c.oldReady?`<div class="inline-res">${row("Market value",fmt(c.om,S.cur),"dim")}${row("Dealer keeps on trade-in",`${fmt(c.cut,S.cur)} (${pc(c.cutPct)})`,"strong")}</div>`:"";
-  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${c.newWG>0?row("Wastage added",`+${c.newWG.toFixed(3)} g (${fmt(c.newWastageVal,S.cur)})`,"dim"):""}${row("Gold value (billed)",fmt(c.nm,S.cur),"dim")}${row("Making / premium charged",`${fmt(c.prem,S.cur)} (${pc(c.premPct)})`,"strong")}</div>`:"";
+  $("exNewRes").innerHTML=c.newReady?`<div class="inline-res">${c.newWG>0?row("Wastage (in total)",`${c.newWG.toFixed(3)} g (${fmt(c.newWastageVal,S.cur)})`,"dim"):""}${row("Gold value (billed)",fmt(c.nm,S.cur),"dim")}${row("Making / premium charged",`${fmt(c.prem,S.cur)} (${pc(c.premPct)})`,"strong")}</div>`:"";
   if(!rate())return needRate;
   if(!(c.oldReady&&c.newReady))return "";
   const cash=c.np-c.ooff, fair=c.nm-c.om, spread=c.prem+c.cut;

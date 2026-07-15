@@ -84,6 +84,7 @@
   .iconBtn{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--dim);line-height:0;padding:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;transition:transform .05s,color .25s}
   .iconBtn:active{transform:scale(.9)}
   .themeSel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--dim);font-family:var(--font);font-size:12px;font-weight:700;padding:0 8px;min-height:40px;cursor:pointer}
+  .curSel{font-weight:800;color:var(--txt);min-width:64px}
 
   /* cards */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:12px;box-shadow:0 1px 3px var(--shadow);transition:background .25s,border-color .25s}
@@ -126,7 +127,7 @@
 
   /* rate board */
   .board{display:grid;grid-template-columns:46px 1fr 1fr 1fr;gap:5px;text-align:right;margin-top:10px}
-  .board .hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:4px 2px}
+  .board .hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:4px 2px;text-align:center}
   .board .kt{text-align:left;font-weight:800;color:var(--gold);font-size:14px;display:flex;align-items:center}
   .board button{background:var(--panel2);border:1px solid transparent;border-radius:var(--radius-sm);color:var(--txt);font-size:13px;font-weight:700;font-family:var(--num);font-variant-numeric:tabular-nums;padding:9px 4px;cursor:pointer;min-height:40px}
   .board button.copied{background:color-mix(in srgb,var(--keep) 20%,transparent);color:var(--keep)}
@@ -255,7 +256,7 @@
       <button data-mode="classic" id="mClassic">Classic</button>
       <button data-mode="terminal" id="mTerminal">Terminal</button>
     </div>
-    <div class="seg" id="curSeg"></div>
+    <select class="themeSel curSel" id="curSel" aria-label="Currency"></select>
   </div>
 </header>
 
@@ -322,7 +323,22 @@
 <script>
 // ============ core ============
 const TOLA=11.6638, OZ=31.1034768;
-const SYM={PKR:"Rs",USD:"$",CAD:"C$"};
+// currencies: symbol + whether the local unit is "tola" territory (affects nothing in math, just context)
+const CURRENCIES=[
+  {code:"PKR",sym:"Rs"},
+  {code:"INR",sym:"₹"},
+  {code:"USD",sym:"$"},
+  {code:"CAD",sym:"C$"},
+  {code:"GBP",sym:"£"},
+  {code:"EUR",sym:"€"},
+  {code:"AED",sym:"AED"},
+  {code:"SAR",sym:"SAR"},
+  {code:"MYR",sym:"RM"},
+  {code:"IDR",sym:"Rp"},
+  {code:"AUD",sym:"A$"},
+];
+const SYM=Object.fromEntries(CURRENCIES.map(c=>[c.code,c.sym]));
+const CUR_CODES=CURRENCIES.map(c=>c.code);
 const $=id=>document.getElementById(id);
 const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x};
 const toG=(w,u)=>u==="tola"?n(w)*TOLA:n(w);
@@ -409,8 +425,13 @@ async function fetchLive(){
     ]);
     const g=await gRes.json(), fx=await fxRes.json();
     if(!g.price||!fx.rates) throw new Error("bad data");
-    const perG=g.price/OZ;
-    S.cache={rates:{USD:perG,PKR:perG*fx.rates.PKR,CAD:perG*fx.rates.CAD},at:Date.now(),src:"intl spot",manual:false};
+    const perG=g.price/OZ; // USD per gram of 24K
+    const rates={};
+    CUR_CODES.forEach(code=>{
+      if(code==="USD") rates.USD=perG;
+      else if(fx.rates[code]) rates[code]=perG*fx.rates[code];
+    });
+    S.cache={rates,at:Date.now(),src:"intl spot",manual:false};
     store.set("rateCache",S.cache);
     renderAll();
   }catch(e){
@@ -815,7 +836,14 @@ function renderResultsOnly(){
 // ============ wiring ============
 function renderAll(){renderRateBar();renderBoard();renderMode();}
 
-buildSeg($("curSeg"),["PKR","USD","CAD"].map(c=>({label:c,val:c})),()=>S.cur,v=>{S.cur=v;store.set("cur",v);renderAll()});
+// currency dropdown
+(function(){
+  const sel=$("curSel");
+  sel.innerHTML=CURRENCIES.map(c=>`<option value="${c.code}">${c.code}</option>`).join("");
+  if(!CUR_CODES.includes(S.cur)) S.cur="PKR";
+  sel.value=S.cur;
+  sel.onchange=(e)=>{S.cur=e.target.value;store.set("cur",e.target.value);renderAll();};
+})();
 buildSeg($("manualPer"),[{label:"/tola",val:"tola"},{label:"/g",val:"gram"}],()=>S.manualUnit,v=>S.manualUnit=v);
 
 const tabDefs=[["buy","Buying"],["sell","Selling"],["exchange","Exchange"]];
